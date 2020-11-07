@@ -1,3 +1,12 @@
+#' Julio Fornazier (julio.fornazier@gmail.com)
+#' 
+
+# Indexes ----------------------------------------------------------------
+
+#'phyloseq
+#'relative abundance
+#'standard desviation
+#'
 
 # Observações -------------------------------------------------------------
 
@@ -29,13 +38,17 @@ ps.family.ra.top = filter_taxa(ps.family.ra,
                                function(x) mean(x) > 1e-2, 
                                TRUE) 
 
-# Obter abundancia relativa em função dos metadados disponíveis
+#' Obter abundancia relativa em função dos metadados disponíveis
+#' Para obter a média substituir "sum" por "mean"
+#' Usar Abundance ~ [variável que pretende obter a informação]+[variável2]
+#' Usando "Abundance ~ ." comando retorna "Abundance" em função de todos os metadados disponíveis
 df.melt.sum <- aggregate(Abundance ~ ., 
                          data = psmelt(ps.family.ra.top), 
                          sum, 
                          simplify = T) 
 
-# Obter desvio padrão em função dos metadados disponíveis
+#' Obter desvio padrão em função dos metadados disponíveis
+#' Aplica-se o mesmo descrito anteriormente
 df.melt.sd <- aggregate(Abundance ~ Family + estrato, 
                         data = psmelt(ps.family.ra.top), 
                         sd, 
