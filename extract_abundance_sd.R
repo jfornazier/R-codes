@@ -21,8 +21,10 @@ library(stats)
 
 # Script -----------------------------------------------------------
 
-# Objeto phyloseq
-ps 
+# Phyloseq object
+data(GlobalPatterns)
+ps <- GlobalPatterns
+ 
 
 # Agrupar ASV a nível de família
 ps.family <- tax_glom(ps, "Family", 
@@ -42,14 +44,14 @@ ps.family.ra.top = filter_taxa(ps.family.ra,
 #' Para obter a média substituir "sum" por "mean"
 #' Usar Abundance ~ [variável que pretende obter a informação]+[variável2]
 #' Usando "Abundance ~ ." comando retorna "Abundance" em função de todos os metadados disponíveis
-df.melt.sum <- aggregate(Abundance ~ ., 
+df.melt.sum <- aggregate(Abundance ~ Family + SampleType, 
                          data = psmelt(ps.family.ra.top), 
                          sum, 
                          simplify = T) 
 
 #' Obter desvio padrão em função dos metadados disponíveis
 #' Aplica-se o mesmo descrito anteriormente
-df.melt.sd <- aggregate(Abundance ~ Family + estrato, 
+df.melt.sd <- aggregate(Abundance ~ Family + SampleType, 
                         data = psmelt(ps.family.ra.top), 
                         sd, 
                         simplify = T) 
