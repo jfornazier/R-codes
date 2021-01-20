@@ -1,0 +1,65 @@
+' Julio Fornazier (julio.fornazier@gmail.com)
+#' 
+#' 
+
+# Indexes ----------------------------------------------------------------
+
+#'phyloseq
+#'relative abundance
+#'graphics
+#'
+
+# Observações -------------------------------------------------------------
+
+#' Script para plotar graficos a partir de um objeto phyloseq
+#' O arquivo de entrada é um objeto phyloseq
+#' 
+
+# Pacotes ---------------------------------------------------------
+
+library(phyloseq)
+library(ggplot2)
+
+# Script -----------------------------------------------------------
+
+# Phyloseq object
+data(GlobalPatterns)
+ps <- GlobalPatterns
+
+
+# Normalizar as amostras para que todas as amostras tenham o mesmo numero de sequencias
+ps.rare <- rarefy_even_depth(ps, sample.size = min(sample_sums(ps), set.seed(178459)))
+
+# Análise de ordenação NMDS utilizando métrica bray-curtis
+ps.ord <- ordinate(ps.rare, "NMDS", "bray")
+
+# Filtrar Familias mais abundantes
+ps.family.ra.top = filter_taxa(ps.family.ra, 
+                               function(x) mean(x) > 1e-2, 
+                               TRUE) 
+
+
+#' Na váriavel "color" Adicionar a variável que pretende usar para colorir o gráfico, 
+#' nesse caso pretendemos que as cores sejam em do tipo de substrato
+
+plot_ordination(ps.rare, 
+                ps.ord, type="samples", color= "SampleType") +
+  labs(colour="Substrate Type")+
+  geom_point(size=5, alpha=1, show.legend = F) +
+  geom_vline(xintercept=c(0,0), linetype="dotted", size = 0.5, colour = "Gray")+
+  geom_hline(yintercept=c(0,0), linetype="dotted", size = 0.5, colour = "Gray")+
+  guides(colour = guide_legend(override.aes = list(size=5)))+
+  theme(axis.title.x = element_text(face = "bold", size=12, color = "black"), 
+        legend.position="right", 
+        legend.text = element_text(face = "plain",size=12),
+        legend.title = element_text(face = "bold",size=12),
+        axis.title.y = element_text(face = "bold", size=12, color = "black"),
+        axis.text.x = element_text(face = "bold", angle = 0, hjust = 0.5, size=12, color = "black"), 
+        axis.text.y = element_text(face = "bold", size=12, hjust = 0.5, vjust = 0.5, color = "black"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black", size=0.5),
+        panel.border = element_rect(colour = "black", fill=NA, size=1.1),
+        panel.background = element_rect(fill = "transparent", colour = NA), 
+        plot.background = element_rect(colour = 'NA', fill = 'transparent'),
+        legend.key=element_rect(fill="white"))
