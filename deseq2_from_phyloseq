@@ -1,0 +1,99 @@
+' Julio Fornazier (julio.fornazier@gmail.com)
+#' 
+#' 
+
+# Indexes ----------------------------------------------------------------
+
+#'phyloseq
+#'relative abundance
+#'graphics
+#'
+
+# Observações -------------------------------------------------------------
+
+#' Script para plotar graficos a partir de um objeto phyloseq
+#' O arquivo de entrada é um objeto phyloseq
+#' 
+
+# Pacotes ---------------------------------------------------------
+
+require(phyloseq)
+require(ggplot2)
+require(DESeq2)
+
+# Script -----------------------------------------------------------
+
+# Phyloseq object
+data(GlobalPatterns)
+ps <- GlobalPatterns
+sample_data(ps)$SampleType=gsub("", "", sample_data(ps)$SampleType) #remover espaços
+
+
+# DESEq2
+# Para mais detalhes http://joey711.github.io/phyloseq-extensions/DESeq2.html
+# algumas avisos serão exibidos durantes as etapas, eles são emitidos pq existem caracteres além de letras
+
+sd.ps <- data.frame(sample_data(ps))
+
+diagdds2 = phyloseq_to_deseq2(ps, ~ SampleType)
+
+
+#calcular média geométrica
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+
+geoMeans2 = apply(counts(diagdds2), 1, gm_mean)
+
+diagdds2 = estimateSizeFactors(diagdds2, geoMeans = geoMeans2)
+
+#rodar deseq2
+diagdds2 = DESeq(diagdds2, fitType = "local", parallel = F)
+
+#gerar contraste
+res = results(diagdds2, contrast=c("SampleType","Soil","Ocean"), pAdjustMethod = "fdr")
+
+res = res[order(res$pvalue, na.last=NA), ]
+
+#estabelecer limite de significancia
+alpha = 0.05
+
+#data frame com resultado 
+sigtab = cbind(as(res, "data.frame"), as(tax_table(ps)[rownames(res), ], "matrix"))
+sigtab = subset(sigtab, padj <= alpha)
+sigtab = (sigtab[sigtab$padj <= alpha, ])
+
+# Organizar a exibição das ASVs no grafico
+#Phylum
+x = tapply(sigtab$log2FoldChange, sigtab$Phylum, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$Phylum = factor(as.character(sigtab$Phylum), levels=names(x))
+# Genus
+x = tapply(sigtab$log2FoldChange, sigtab$Class, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$Class = factor(as.character(sigtab$Class), levels=names(x))
+
+ggplot(sigtab, aes(x=Class, y=log2FoldChange, fill=Phylum)) + geom_point(aes(fill=Phylum), colour="black",pch=21, size=5) +  
+  geom_hline(yintercept=0, linetype="dashed", color = "black", size = 1)+
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust=0))+
+  coord_flip()+
+  ggtitle("Soil vs Ocean", c("log2foldchange > 0 = ASVs sign. mais abundantes em amostras de solo"))+
+  theme_bw()+
+  theme(text = element_text(face = "plain", size=12, color = "black"), legend.position="right", 
+        axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0, size=12, color = "black"), 
+        axis.text.y = element_text(size=12, color = "black"),
+        panel.grid.major.y = element_line(colour = "gray80", size = 0.1, linetype = 2), 
+        panel.grid.major.x = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        #axis.title.x = element_text(size = 14),
+        axis.title = element_text(size = 12, face = "bold"),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(face = "bold", size = 12, color = "black"),
+        plot.title = element_text(color = "black", size = 12, face = "bold", hjust = 0.5))+
+  guides(fill = guide_legend(ncol=1, direction = "vertical", title.position = "top", title.hjust = 0.5))
+
+
+#----
+
+
