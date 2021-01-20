@@ -1,4 +1,4 @@
-# Julio Fornazier (Moreira, J. F) 
+# Julio Fornazier (Moreira, J.C.F.) 
 # R-codes
 
 FAPROTAX-bubble-chart.R --> Export phyloseq table, input it on FAPROTAX script and save outputs. Load FAPROTAX in R, process table and export bubble chart.
