@@ -1,0 +1,63 @@
+' Julio Fornazier (julio.fornazier@gmail.com)
+#' 
+#' 
+
+# Indexes ----------------------------------------------------------------
+
+#'phyloseq
+#'relative abundance
+#'graphics
+#'
+
+# Observações -------------------------------------------------------------
+
+#' Script para plotar graficos a partir de um objeto phyloseq
+#' O arquivo de entrada é um objeto phyloseq
+#' 
+
+# Pacotes ---------------------------------------------------------
+
+library(phyloseq)
+library(ggplot2)
+
+# Script -----------------------------------------------------------
+
+# Phyloseq object
+data(GlobalPatterns)
+ps <- GlobalPatterns
+
+
+# Agrupar ASV a nível de família
+ps.family <- tax_glom(ps, "Family", 
+                      NArm=T, 
+                      bad_empty=c(NA, "", " ", "\t", "uncultured")) 
+
+# Transformar para abundância relativa
+ps.family.ra  = transform_sample_counts(ps.family, 
+                                        function(x) x / sum(x)) 
+
+# Filtrar Familias mais abundantes
+ps.family.ra.top = filter_taxa(ps.family.ra, 
+                               function(x) mean(x) > 1e-2, 
+                               TRUE) 
+
+
+#' Adicionar na variável "x" o parametro que pretende que apareça o eixo x do gráfico
+#' Na váriavel "fill" Adicionar a variável que pretende usar para colorir o gráfico, 
+#' nesse caso pretendemos que as cores sejam em função do Filo, caso prefira outro nível taxonômico altere para o desejado
+
+plot_bar(ps.family.ra.top, x = "X.SampleID", fill="Phylum")+  
+  labs(fill="Phylum")+ ## Esse termo será o titulo da legenda, altere para que fique de acordo
+  xlab("Sites") + # titulo do eixo x
+  ylab("Relative abundance") + # titulo do eixo y
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size=12, color = "black"), 
+        axis.text.y = element_text(size=12, color = "black"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.title = element_text(size = 14, face = "bold"),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(face = "bold", size = 12, color = "black"),
+        strip.text.x = element_text(face = "plain", size = 12, color = "black"))+
+  facet_grid(~SampleType, scales = "free_x") #esse comando permite que o grafico seja subdivido de acordo com um fator. Defina de acordo com a sua situação. Se não for necessário exclua. 
