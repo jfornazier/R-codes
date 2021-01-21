@@ -1,0 +1,76 @@
+' Julio Fornazier (julio.fornazier@gmail.com)
+#' 
+#' 
+
+# Indexes ----------------------------------------------------------------
+
+#'phyloseq
+#'relative abundance
+#'graphics
+#'
+
+# Observações -------------------------------------------------------------
+
+#' Script para plotar graficos a partir de um objeto phyloseq
+#' O arquivo de entrada é um objeto phyloseq
+#' 
+
+# Pacotes ---------------------------------------------------------
+
+require(phyloseq)
+require(ggplot2)
+require(UpSetR)
+
+# Script -----------------------------------------------------------
+
+# Phyloseq object
+data(GlobalPatterns)
+ps <- GlobalPatterns
+#sample_data(ps)$SampleType=gsub("", "", sample_data(ps)$SampleType)
+
+# Merge samples
+ps.merged <- merge_samples(ps, "SampleType")
+sample_data(ps.merged)$SampleType <- rownames(sample_data(ps.merged))
+
+
+# upset plot ####
+st.ust <- data.frame(sample_data(ps.merged))
+Ust <- data.frame(otu_table(ps.merged), check.names = F)
+
+identical(rownames(Ust), rownames(st.ust))
+
+Ust.t <- data.frame(t(Ust), check.names = F)
+
+Ust.t$sum <- rowSums(Ust.t)
+
+Ust.bk <- Ust.t
+
+Ust.t[Ust.t >= 1] <- 1
+
+identical(rownames(Ust.t), rownames(Ust.bk))
+
+Ust.t$sum <- Ust.bk$sum
+
+Ust.tax <- data.frame(tax_table(ps.merged))
+
+identical(rownames(Ust.tax), rownames(Ust.t))
+
+Ust.t.merged <- merge(Ust.t, Ust.tax, by = "row.names")
+rownames(Ust.t.merged) <- Ust.t.merged$Row.names
+Ust.t.merged <- Ust.t.merged[,-1]
+
+Ust.t.merged$Names <- rownames(Ust.t.merged)
+
+str(Ust.t.merged)
+
+#'Obs:
+#'nintersects limita o numero de interseccoes que serao exibidas. 
+#'nesse exemplo esta limitado em 100. Ajuste para sua situacao.
+#'Para mais detalhes https://github.com/hms-dbmi/UpSetR
+
+Up <- upset(Ust.t.merged, nsets = 9, nintersects = 100, 
+            order.by = c("freq","degree"), decreasing = c(T,F), keep.order = T,main.bar.color = "black", text.scale = 1.7,number.angles = 0,
+            mb.ratio = c(0.55, 0.45),point.size = 3.5, line.size = 1,group.by = "degree",query.legend = "top",
+            queries = list(list(query = elements, params = list("Kingdom", "Archaea"),color = "black", active = TRUE, decreasing=T, query.name = "Archaea"),
+                           list(query = elements, params = list("Kingdom", "Bacteria"),color = "#0063be", active = TRUE, query.name = "Bacteria")))
+Up
