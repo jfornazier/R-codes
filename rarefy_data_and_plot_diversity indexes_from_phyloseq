@@ -1,0 +1,102 @@
+' Julio Fornazier (julio.fornazier@gmail.com)
+#' 
+#' 
+
+# Indexes ----------------------------------------------------------------
+
+#'phyloseq
+#'rarefaction
+#'rarefaction curves
+#'alpha diversities indexes
+#'plot diversity
+
+# Observações -------------------------------------------------------------
+
+#' 
+
+# Pacotes ---------------------------------------------------------
+
+require(phyloseq)
+require(ggplot2)
+require(ggpubr)
+require(ggplot2)
+
+# Script -----------------------------------------------------------
+
+# Phyloseq object
+data(GlobalPatterns)
+ps <- GlobalPatterns
+
+
+# Verificar o numero de sequencias por amostra
+sort(sample_sums(ps))
+
+# Observar curva de rarefação
+#' step = intervalo de cálculo (Quanto menor, mais detalhado será. Isso irá aumentar muito o tempo de processamento dependendo do tamanho do seu conjunto de dados)
+#' sample = posição no eixo x (número de sequencias) onde se pretende adicionar linhas para demarcar um ponto (substitua pelos valores que fazem sentido para seus dados)
+#' Os intervalos selecionados em "sample" podem ser escolhidos com base no numero de sequencias observado no comando "sort(sample_sums(ps))"
+#' cex e lwd são parametros gráficos
+
+rarecurve(t(otu_table(ps)), step = 1000, sample = c(58688, 2357181), cex = 1, lwd = 1)
+
+#' Observar a diferença na riqueza de especies entre os dados brutos e rarefeitos
+#' A função specnumber vai retorna a riqueza das amostras
+#' A função rarefy_even_depth vai subselecionar o número de sequencias escolhido (rarefação). 
+#' sample.size = min(sample_sums(ps)) == Nesse caso estamos informando para subselecionar para o número mínimo de sequencias observado entre as amostras.
+
+S <- specnumber(t(otu_table(ps))) # Número de espécies observado nos dados originais
+ps.rare <- rarefy_even_depth(ps, sample.size = min(sample_sums(ps)))
+Srare <- specnumber(t(otu_table(ps.rare))) # Número de espécies observados nos dados rarefeitos
+
+# Observar a diferença na riqueza entre os dados (original vs rarefeita)
+#' Nota: é esperado que a profundidade de rarefação escolhida para esse conjunto de dados (GlobalPatterns) faça com que espécies sejam perdidas, isso ocorre porque a profundidade
+#' de sequenciamento da maioria das amostras é alta e o numero de sequencias selecionado (o mínimo identicado entre as amostras) é muito pequeno. Transponha essa observação para seus dados
+#' para decidir se manter uma amostra com poucas sequencias vale a pena frente a perda de diversidade.
+
+plot(S, Srare, xlab = "Observed No. of Species", ylab = "Rarefied No. of Species")
+abline(0, 1)
+
+# Rarefação
+#' sample.size = profundidade de rarefação escolhida. Escolha esse valor de acordo com seus dados. Defina esse valor de acordo com as análises anteriores
+#' sample_size aqui ainda está selecionando o número mínimo de sequencias identificado entre as amostras. 
+#' Isso é só um exemplo e uma forma de manter todas as amostras, mas pode não ser o ideal para seu conjunto de dados.
+
+ps.rare1 <- rarefy_even_depth(ps, sample.size = min(sample_sums(ps)))
+
+#' Calcular indices de diversidade
+#' Usando a configuração abaixo é possível calcula o indice e adicioná-lo como uma nova coluna em sem arquivo sample_data()
+#' A função estimate_richness() permite o cálculo de outros indices de diversidade. Observe o arquivo de ajuda para saber como calcular. 
+
+sample_data(ps.rare1)$Chao1 <- estimate_richness(ps.rare1, measures="Chao1", split = TRUE)[,1]
+sample_data(ps.rare1)$Shannon <- estimate_richness(ps.rare1, measures="Shannon", split = TRUE)[,1]
+sample_data(ps.rare1)$Observed <- estimate_richness(ps.rare1,measures="Observed", split = TRUE)[,1]
+sample_data(ps.rare1)$InvSimpson <- estimate_richness(ps.rare1,measures="InvSimpson", split = TRUE)[,1]
+
+
+#' Gerar gráficos com os índices de riqueza e diversidade
+
+plot.obs <- plot_richness(ps.rare1, x="X.SampleID", color="SampleType", measures=c("Observed")) +
+  geom_point(size=4, alpha=1) + 
+  ylab("Observed")+
+  facet_grid(~SampleType, scales = "free_x")
+
+plot.chao <- plot_richness(ps.rare1, x="X.SampleID", color="SampleType", measures=c("Chao1")) +
+  geom_point(size=4, alpha=1) + 
+  ylab("Chao1")+
+  facet_grid(~SampleType, scales = "free_x")
+
+plot.shannon <- plot_richness(ps.rare1, x="X.SampleID", color="SampleType", measures=c("Shannon")) +
+  geom_point(size=4, alpha=1) + 
+  ylab("Shannon")+
+  facet_grid(~SampleType, scales = "free_x")
+
+plot.simpson <- plot_richness(ps.rare1, x="X.SampleID", color="SampleType", measures=c("Simpson")) +
+  geom_point(size=4, alpha=1) + 
+  ylab("Simpson")+
+  facet_grid(~SampleType, scales = "free_x")
+
+# Essa função permite agregar em um único arquivo vários gráficos
+ggarrange(plot.obs,plot.chao,plot.shannon,plot.simpson,
+          ncol = 1, nrow = 4, common.legend = T)
+
+#----
