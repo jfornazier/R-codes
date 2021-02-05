@@ -15,4 +15,4 @@ plot_ordenation_from_phyloseq --> Perform ordenation analysis and plot from a ph
 
 plot_relative_abundance_from_phyloseq --> Merge samples and taxonomic levels to plot graphics of microbial abundance
 
-plot_relative_abundance_from_phyloseq --> Visual analysis, rarefy data, calulate diversity indexes and plot graphs
+rarefy_data_and_plot_diversity indexes_from_phyloseq --> Visual analysis, rarefy data, calulate diversity indexes and plot graphs
